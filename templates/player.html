@@ -1,0 +1,70 @@
+{% extends "head.html" %}
+{% block content %}
+<h1 class="text-center"><a href="/">Youtube Episode player</a></h1>
+
+<div class="container">
+    <h2>Now playing: {{ title }}</h1>
+    <div class="videowrapper">
+        <div id="player"></div>
+    </div>
+    <br>
+
+    <script>
+    // Load the IFrame Player API code asynchronously.
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/player_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // Replace the 'player' element with an <iframe> and
+    // YouTube player after the API code downloads.
+    var player;
+    function onYouTubePlayerAPIReady() {
+        player = new YT.Player('player', {
+            height: '720',
+            width: '1280',
+            videoId: '{{ vid }}',
+            playerVars: { 'autoplay': 1 },
+
+            events: {
+                'onReady':onPlayerReady,
+                'onStateChange': onPlayerStateChange,
+            }
+        });
+    }
+
+    function onPlayerReady(event) {
+        event.target.setPlaybackQuality('highres');
+        event.target.seekTo({{ start }});
+    }
+
+    var playing = true;
+    function onPlayerStateChange(event) {
+        playing = (event.data == 1);
+        sendTime();
+    }
+
+    function sendTime(){
+        var time = player.getCurrentTime() | 0; // remove decimals
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("GET", "/settime/{{ playlist }}/"+time, true);
+        xhttp.send();
+    }
+    
+    setInterval(function(){
+        if(playing){
+            sendTime();
+        }
+    }, 5000);
+
+    </script>
+
+    {% if prev_page %}
+    <a href="/setvideo/{{ playlist }}/{{ prev_page }}">Prev</a> | <a href="/setvideo/{{ playlist }}/{{ next_page }}">Next</a>
+    {% else %}
+    <a href="/setvideo/{{ playlist }}/{{ next_page }}">Next</a>
+    {% endif %}
+</div>
+
+
+{% endblock %}
